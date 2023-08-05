@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/goodController")
+@RequestMapping("/api/Controller")
 @AllArgsConstructor
 @Slf4j
 public class Controller {
