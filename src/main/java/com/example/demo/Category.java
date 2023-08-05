@@ -6,7 +6,7 @@ import lombok.Data;
 
 @Data
 @Entity
-@Table
+@Table(name = "categories")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Category {
 
