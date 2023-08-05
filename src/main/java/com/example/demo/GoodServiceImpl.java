@@ -5,27 +5,24 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @AllArgsConstructor
 @Slf4j
 public class GoodServiceImpl implements GoodService {
 
-    private GoodRepo goodRepo;
-    private CategoryRepo categoryRepo;
+    private final GoodRepo goodRepo;
+    private final CategoryRepo categoryRepo;
 
     @Override
-    public Good createGood(GoodDto good) {
-        Good good1 = new Good();
-        good1.setName(good.getName());
-        good1.setCost(good.getCost());
-        good1.setDescription(good.getDescription());
-        try {
-            good1.setCategory(categoryRepo.getReferenceById(good.getCategory()));
-        }catch (Exception e){
-            log.error("Category not found");
-        }
-        return goodRepo.save(good1);
+    public Good createGood(GoodDto goodDto) {
+        Good good = new Good();
+        good.setName(goodDto.getName());
+        good.setCost(goodDto.getCost());
+        good.setDescription(goodDto.getDescription());
+        setCategory(goodDto.getCategory(), good);
+        return goodRepo.save(good);
     }
 
     @Override
@@ -35,22 +32,18 @@ public class GoodServiceImpl implements GoodService {
 
     @Override
     public List<Good> findByCategory(Long categoryId) {
-        return goodRepo.findAllByCategory(categoryRepo.getReferenceById(categoryId));
+        Category category = categoryRepo.getReferenceById(categoryId);
+        return goodRepo.findAllByCategory(category);
     }
 
-
     @Override
-    public Good updateGoodById(GoodDto good) {
-        Good good1 = new Good();
-        good1.setName(good.getName());
-        good1.setCost(good.getCost());
-        good1.setDescription(good.getDescription());
-        try {
-            good1.setCategory(categoryRepo.getReferenceById(good.getCategory()));
-        }catch (Exception e){
-            log.error("Category not found");
-        }
-        return goodRepo.save(good1);
+    public Good updateGoodById(GoodDto goodDto) {
+        Good good = goodRepo.getReferenceById(goodDto.getId());
+        good.setName(goodDto.getName());
+        good.setCost(goodDto.getCost());
+        good.setDescription(goodDto.getDescription());
+        setCategory(goodDto.getCategory(), good);
+        return goodRepo.save(good);
     }
 
     @Override
@@ -69,22 +62,34 @@ public class GoodServiceImpl implements GoodService {
 
     @Override
     public Category updateCategory(Category category) {
-        Category category1 = categoryRepo.getReferenceById(category.getId());
-        category1.setName(category.getName());
-        return categoryRepo.save(category1);
+        Category existingCategory = categoryRepo.getReferenceById(category.getId());
+        existingCategory.setName(category.getName());
+        return categoryRepo.save(existingCategory);
     }
 
     @Override
     public String deleteCategory(Long id) {
-        List<Good> allGoodWithCategory = goodRepo.findAllByCategory(categoryRepo.getReferenceById(id));
-        allGoodWithCategory.forEach(x -> x.setCategory(null));
-        goodRepo.saveAll(allGoodWithCategory);
-        categoryRepo.deleteById(id);
-        return "Категория удалена";
+        Category category = categoryRepo.getReferenceById(id);
+        if (category != null) {
+            List<Good> allGoodWithCategory = goodRepo.findAllByCategory(category);
+            allGoodWithCategory.forEach(x -> x.setCategory(null));
+            goodRepo.saveAll(allGoodWithCategory);
+            categoryRepo.deleteById(id);
+            return "Категория удалена";
+        } else {
+            return "Категория не найдена";
+        }
     }
 
     @Override
     public List<Category> findAllCategory() {
         return categoryRepo.findAll();
+    }
+
+    private void setCategory(Long categoryId, Good good) {
+        if (categoryId != null) {
+            Optional<Category> categoryOptional = categoryRepo.findById(categoryId);
+            categoryOptional.ifPresent(good::setCategory);
+        }
     }
 }
